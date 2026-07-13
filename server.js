@@ -3,13 +3,15 @@ require('dotenv').config();
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+const ROOT = __dirname;
 
 if (!WEBHOOK_URL) {
-  console.error('DISCORD_WEBHOOK_URL manquant dans le fichier .env');
+  console.error('DISCORD_WEBHOOK_URL manquant');
   process.exit(1);
 }
 
@@ -23,7 +25,35 @@ const submitLimiter = rateLimit({
   legacyHeaders: false
 });
 
-app.use(express.static(path.join(__dirname)));
+app.get('/health', (req, res) => {
+  res.json({ ok: true });
+});
+
+app.get('/favicon.ico', (req, res) => {
+  res.type('ico');
+  res.sendFile(path.join(ROOT, 'favicon.ico'));
+});
+
+app.get('/favicon.png', (req, res) => {
+  res.type('png');
+  res.sendFile(path.join(ROOT, 'favicon.png'));
+});
+
+app.get('/favicon-32.png', (req, res) => {
+  res.type('png');
+  res.sendFile(path.join(ROOT, 'favicon-32.png'));
+});
+
+app.use(express.static(ROOT, {
+  maxAge: '7d',
+  etag: true,
+  index: false
+}));
+
+app.get('/', (req, res) => {
+  res.set('Cache-Control', 'no-cache');
+  res.sendFile(path.join(ROOT, 'index.html'));
+});
 
 function buildEmbed(text) {
   const maxChunk = 4088;
@@ -68,5 +98,8 @@ app.post('/api/submit', submitLimiter, async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`RBXMAP running on http://localhost:${PORT}`);
+  const files = ['index.html', 'styles.css', 'script.js', 'favicon.ico', 'favicon-32.png'];
+  const missing = files.filter((f) => !fs.existsSync(path.join(ROOT, f)));
+  console.log(`RBXMAP running on port ${PORT}`);
+  if (missing.length) console.warn('Fichiers manquants:', missing.join(', '));
 });
