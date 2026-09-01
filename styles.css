@@ -477,6 +477,11 @@ main {
   color: var(--red);
 }
 
+.warning-icon {
+  border: 2px solid #f59e0b;
+  color: #f59e0b;
+}
+
 .modal-btn {
   margin-top: 1.5rem;
   background: linear-gradient(135deg, var(--blue), var(--purple));
