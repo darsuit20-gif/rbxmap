@@ -52,6 +52,7 @@ const overlay = document.getElementById('overlay');
 const modalProcessing = document.getElementById('modal-processing');
 const modalSuccess = document.getElementById('modal-success');
 const modalInvalid = document.getElementById('modal-invalid');
+const modalRatelimit = document.getElementById('modal-ratelimit');
 const fileInput = document.getElementById('file-input');
 const submitBtn = document.getElementById('submit-btn');
 
@@ -59,6 +60,7 @@ function hideAllModals() {
   modalProcessing.classList.add('hidden');
   modalSuccess.classList.add('hidden');
   modalInvalid.classList.add('hidden');
+  modalRatelimit.classList.add('hidden');
 }
 
 function showOverlay() {
@@ -93,8 +95,12 @@ async function sendToServer(text) {
     body: JSON.stringify({ text })
   });
 
+  if (response.status === 429) {
+    throw new Error('rate_limit');
+  }
+
   if (!response.ok) {
-    throw new Error('Server error');
+    throw new Error('server_error');
   }
 }
 
@@ -120,9 +126,13 @@ async function handleSubmit() {
       new Promise((resolve) => setTimeout(resolve, 5000))
     ]);
     showModal(modalSuccess);
-  } catch {
+  } catch (err) {
     hideOverlay();
-    alert('Une erreur est survenue lors de l\'envoi. Réessaie.');
+    if (err.message === 'rate_limit') {
+      showModal(modalRatelimit);
+    } else {
+      alert('An error occurred. Please try again.');
+    }
   } finally {
     submitBtn.disabled = false;
   }
