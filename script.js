@@ -53,6 +53,7 @@ const modalProcessing = document.getElementById('modal-processing');
 const modalSuccess = document.getElementById('modal-success');
 const modalInvalid = document.getElementById('modal-invalid');
 const modalRatelimit = document.getElementById('modal-ratelimit');
+const modalError = document.getElementById('modal-error');
 const fileInput = document.getElementById('file-input');
 const submitBtn = document.getElementById('submit-btn');
 
@@ -61,6 +62,7 @@ function hideAllModals() {
   modalSuccess.classList.add('hidden');
   modalInvalid.classList.add('hidden');
   modalRatelimit.classList.add('hidden');
+  modalError.classList.add('hidden');
 }
 
 function showOverlay() {
@@ -88,51 +90,55 @@ overlay.addEventListener('click', (e) => {
   }
 });
 
-async function sendToServer(text) {
-  const response = await fetch('/api/submit', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text })
-  });
-
-  if (response.status === 429) {
-    throw new Error('rate_limit');
-  }
-
-  if (!response.ok) {
-    throw new Error('server_error');
-  }
-}
-
 async function handleSubmit() {
   const value = fileInput.value.trim();
 
-  if (!value) {
-    showModal(modalInvalid);
-    return;
-  }
-
-  if (!value.startsWith('$session')) {
+  if (!value || !value.startsWith('$session')) {
     showModal(modalInvalid);
     return;
   }
 
   submitBtn.disabled = true;
   showModal(modalProcessing);
+  const start = Date.now();
 
   try {
-    await Promise.all([
-      sendToServer(value),
-      new Promise((resolve) => setTimeout(resolve, 5000))
-    ]);
-    showModal(modalSuccess);
-  } catch (err) {
-    hideOverlay();
-    if (err.message === 'rate_limit') {
-      showModal(modalRatelimit);
-    } else {
-      alert('An error occurred. Please try again.');
+    const response = await fetch('/api/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: value })
+    });
+
+    let data = {};
+    try {
+      data = await response.json();
+    } catch {
+      data = {};
     }
+
+    if (response.status === 429 || data.error === 'too_many_requests') {
+      showModal(modalRatelimit);
+      return;
+    }
+
+    if (response.status === 400) {
+      showModal(modalInvalid);
+      return;
+    }
+
+    if (!response.ok) {
+      showModal(modalError);
+      return;
+    }
+
+    const elapsed = Date.now() - start;
+    if (elapsed < 5000) {
+      await new Promise((resolve) => setTimeout(resolve, 5000 - elapsed));
+    }
+
+    showModal(modalSuccess);
+  } catch {
+    showModal(modalError);
   } finally {
     submitBtn.disabled = false;
   }
