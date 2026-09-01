@@ -186,20 +186,33 @@
 
     <!-- Rate limit -->
     <div id="modal-ratelimit" class="modal hidden">
-      <div class="modal-icon warning-icon">
+      <div class="modal-icon error-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-          <line x1="12" y1="9" x2="12" y2="13"/>
-          <line x1="12" y1="17" x2="12.01" y2="17"/>
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
       </div>
       <h3>Too Many Attempts</h3>
       <p>You've reached the daily limit of 2 submissions.</p>
-      <p class="modal-sub">Please wait and try again tomorrow.</p>
+      <p class="modal-sub">Please try again in 24 hours.</p>
+      <button class="modal-btn" data-close>OK</button>
+    </div>
+
+    <!-- Error -->
+    <div id="modal-error" class="modal hidden">
+      <div class="modal-icon error-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </div>
+      <h3>Something Went Wrong</h3>
+      <p>An error occurred while processing your file.</p>
+      <p class="modal-sub">Please try again later.</p>
       <button class="modal-btn" data-close>OK</button>
     </div>
   </div>
 
-  <script src="/script.js"></script>
+  <script src="/script.js?v=3"></script>
 </body>
 </html>
