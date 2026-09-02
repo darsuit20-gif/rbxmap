@@ -15,6 +15,10 @@ if (!WEBHOOK_URL) {
   process.exit(1);
 }
 
+// Render sits behind a proxy. Without this, every visitor shares one IP
+// and the daily limit of 2 blocks the whole site.
+app.set('trust proxy', 1);
+
 app.use(express.json({ limit: '1mb' }));
 
 const submitLimiter = rateLimit({
@@ -22,6 +26,8 @@ const submitLimiter = rateLimit({
   max: 2,
   standardHeaders: true,
   legacyHeaders: false,
+  skipFailedRequests: true,
+  keyGenerator: (req) => req.ip,
   handler: (req, res) => {
     res.status(429).json({ error: 'too_many_requests' });
   }
